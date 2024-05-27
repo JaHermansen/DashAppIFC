@@ -40,22 +40,38 @@ layout = html.Div([
         multiple=False
     ),
     
+    # Store component to hold the uploaded file content
+    dcc.Store(id='stored-file', storage_type='session'),
+
     # Div to display the overview of the uploaded file with a loading spinner
     dcc.Loading(
         id="loading-spinner",
-        type="circle",
+        type="circle",  # Choose the type of loading animation here
         children=html.Div(id='file-overview')
     )
 ])
 
-# Callback to process the uploaded file and display an overview
+# Callback to process the uploaded file and store its content
 @callback(
-    Output('file-overview', 'children'),
+    Output('stored-file', 'data'),
     [Input('upload-data', 'contents')],
     [State('upload-data', 'filename')]
 )
-def update_output(contents, filename):
+def store_uploaded_file(contents, filename):
     if contents is not None:
+        return {'contents': contents, 'filename': filename}
+    return None
+
+# Callback to display the overview of the uploaded file
+@callback(
+    Output('file-overview', 'children'),
+    [Input('stored-file', 'data')]
+)
+def update_output(stored_file):
+    if stored_file is not None:
+        contents = stored_file['contents']
+        filename = stored_file['filename']
+        
         content_type, content_string = contents.split(',')
         decoded = base64.b64decode(content_string)
 
