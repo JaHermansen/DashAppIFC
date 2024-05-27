@@ -6,10 +6,6 @@ import dash_auth
 import flask
 import base64
 
-# Import layouts from separate files
-from pages import home, page1, page2
-
-
 # Define valid username-password pairs
 VALID_USERNAME_PASSWORD_PAIRS = {
     'JH': '1234'
@@ -22,10 +18,14 @@ server.secret_key = 'VerySecret'  # Replace with a strong random string
 # Initialize the Dash app with the Flask server
 app = dash.Dash(
     server=server,
+    use_pages=True,
     external_stylesheets=[dbc.themes.LUX],
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
     suppress_callback_exceptions=True  # Add this line to suppress the exception
 )
+
+# Import the page layouts after app instantiation
+from pages import home_layout, page1_layout, page2_layout  # Import the page layouts
 
 # Initialize BasicAuth
 auth = dash_auth.BasicAuth(
@@ -95,15 +95,14 @@ app.layout = html.Div([
     content,
 ])
 
-
 @app.callback(Output("page-content", "children"), [Input("url", "pathname")])
 def render_page_content(pathname):
     if pathname == "/":
-        return home.layout
+        return home_layout
     elif pathname == "/ExtractNestedProperties":
-        return page1.layout
+        return page1_layout
     elif pathname == "/BatchCheck":
-        return page2.layout
+        return page2_layout
     else:
         return html.Div(
             [
@@ -114,7 +113,6 @@ def render_page_content(pathname):
             className="p-3 bg-light rounded-3",
         )
 
-
 @app.callback(
     Output("collapse", "is_open"),
     [Input("toggle", "n_clicks")],
@@ -124,7 +122,6 @@ def toggle_collapse(n, is_open):
     if n:
         return not is_open
     return is_open
-
 
 # Callback to handle file uploads
 @app.callback(
@@ -140,7 +137,6 @@ def update_output(contents, filename):
         return f'File {filename} uploaded successfully.'
     else:
         return ''
-
 
 if __name__ == "__main__":
     app.run_server(port=8888, debug=True)
