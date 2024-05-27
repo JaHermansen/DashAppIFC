@@ -4,7 +4,6 @@ from dash import dcc, html
 from dash.dependencies import Input, Output, State
 import dash_auth
 import flask
-import base64
 
 # Define valid username-password pairs
 VALID_USERNAME_PASSWORD_PAIRS = {
@@ -91,6 +90,7 @@ content = html.Div(id="page-content")
 # Layout for the entire application
 app.layout = html.Div([
     dcc.Location(id="url"),
+    dcc.Store(id='ifc-data-store', storage_type='session'),
     sidebar,
     content,
 ])
@@ -122,21 +122,6 @@ def toggle_collapse(n, is_open):
     if n:
         return not is_open
     return is_open
-
-# Callback to handle file uploads
-@app.callback(
-    Output('upload-output', 'children'),
-    [Input('upload-data', 'contents')],
-    [State('upload-data', 'filename')]
-)
-def update_output(contents, filename):
-    if contents is not None:
-        content_type, content_string = contents.split(',')
-        decoded = base64.b64decode(content_string)
-        # Process the uploaded file here
-        return f'File {filename} uploaded successfully.'
-    else:
-        return ''
 
 if __name__ == "__main__":
     app.run_server(port=8888, debug=True)
