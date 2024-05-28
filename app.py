@@ -1,36 +1,34 @@
 import dash
 import dash_bootstrap_components as dbc
-from dash import dcc, html
-from dash.dependencies import Input, Output, State
+from dash import dcc, html, Input, Output, State
 import dash_auth
 import flask
+from flask import Flask
 
-# Define valid username-password pairs
+server = Flask(__name__)
+
 VALID_USERNAME_PASSWORD_PAIRS = {
     'JH': '1234'
 }
 
-# Create the Flask server instance and set a secret key for session management
 server = flask.Flask(__name__)
-server.secret_key = 'VerySecret'  # Replace with a strong random string
+server.secret_key = 'VerySecret'
 
-# Initialize the Dash app with the Flask server
 app = dash.Dash(
     server=server,
     use_pages=True,
     external_stylesheets=[dbc.themes.LUX],
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
-    suppress_callback_exceptions=True  # Add this line to suppress the exception
+    suppress_callback_exceptions=True,
+    title='Data Manager'
 )
 
-# Import the page layouts after app instantiation
-from pages import home_layout, page1_layout, page2_layout  # Import the page layouts
-
-# Initialize BasicAuth
 auth = dash_auth.BasicAuth(
     app,
     VALID_USERNAME_PASSWORD_PAIRS
 )
+
+from pages import home_layout, page1_layout, page2_layout
 
 sidebar_header = dbc.Row(
     [
@@ -87,10 +85,9 @@ sidebar = html.Div(
 
 content = html.Div(id="page-content")
 
-# Layout for the entire application
 app.layout = html.Div([
     dcc.Location(id="url"),
-    dcc.Store(id='ifc-data-store', storage_type='session'),
+    dcc.Store(id='ifc-data-store', storage_type='memory'),  # Change storage_type to 'memory'
     sidebar,
     content,
 ])
@@ -104,24 +101,7 @@ def render_page_content(pathname):
     elif pathname == "/BatchCheck":
         return page2_layout
     else:
-        return html.Div(
-            [
-                html.H1("404: Not found", className="text-danger"),
-                html.Hr(),
-                html.P(f"The pathname {pathname} was not recognised..."),
-            ],
-            className="p-3 bg-light rounded-3",
-        )
-
-@app.callback(
-    Output("collapse", "is_open"),
-    [Input("toggle", "n_clicks")],
-    [State("collapse", "is_open")],
-)
-def toggle_collapse(n, is_open):
-    if n:
-        return not is_open
-    return is_open
+        return html.Div("404: Not found")
 
 if __name__ == "__main__":
     app.run_server(port=8888, debug=True)

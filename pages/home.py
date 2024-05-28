@@ -1,57 +1,36 @@
-from dash import html, dcc, callback, register_page
-from dash.dependencies import Input, Output, State
+from dash import html, dcc, callback, Output, Input, State, dash_table, no_update  # Import no_update here
 import base64
 import ifcopenshell
 import tempfile
 import os
 
-register_page(
-    __name__,
-    path='/',
-    title='Home'
-)
-
 layout = html.Div([
     html.H1("Welcome to the data manager"),
-    html.P("Upload your IFC file and start extracting properties"),
-    
     dcc.Upload(
         id='upload-data',
-        children=html.Div([
-            'Drag and Drop or ',
-            html.A('Select Files')
-        ]),
+        children=html.Div(['Drag and Drop or ', html.A('Select Files')]),
         style={
-            'width': '100%',
-            'height': '60px',
-            'lineHeight': '60px',
-            'borderWidth': '1px',
-            'borderStyle': 'dashed',
-            'borderRadius': '5px',
-            'textAlign': 'center',
-            'margin': '10px'
+            'width': '100%', 'height': '60px', 'lineHeight': '60px',
+            'borderWidth': '1px', 'borderStyle': 'dashed',
+            'borderRadius': '5px', 'textAlign': 'center', 'margin': '10px'
         },
         accept='.ifc',
         multiple=False
     ),
-    
     dcc.Store(id='stored-file', storage_type='session'),
-
-    dcc.Loading(
-        id="loading-spinner",
-        type="circle",
-        children=html.Div(id='file-overview')
-    )
+    dcc.Loading(id="loading-spinner", type="circle", children=html.Div(id='file-overview'))
 ])
 
 @callback(
+    Output('file-overview', 'children'),
     Output('stored-file', 'data'),
     Output('ifc-data-store', 'data'),
-    [Input('upload-data', 'contents')],
-    [State('upload-data', 'filename')]
+    Input('upload-data', 'contents'),
+    State('upload-data', 'filename'),
+    Input('stored-file', 'data')
 )
-def store_uploaded_file(contents, filename):
-    if contents is not None:
+def handle_file_upload(contents, filename, stored_file):
+    if contents:
         content_type, content_string = contents.split(',')
         decoded = base64.b64decode(content_string)
 
@@ -82,22 +61,16 @@ def store_uploaded_file(contents, filename):
         ifc_data = {
             'filename': filename,
             'name': name,
-            'entities_info': entities_info
+            'entities_info': entities_info,
+            'file_contents': contents  # Store the base64 contents
         }
 
-        return {'contents': contents, 'filename': filename}, ifc_data
+        return overview, {'contents': contents, 'filename': filename}, ifc_data
 
-    return None, None
-
-@callback(
-    Output('file-overview', 'children'),
-    [Input('stored-file', 'data')]
-)
-def update_output(stored_file):
-    if stored_file is not None:
+    elif stored_file:
         contents = stored_file['contents']
         filename = stored_file['filename']
-        
+
         content_type, content_string = contents.split(',')
         decoded = base64.b64decode(content_string)
 
@@ -124,6 +97,6 @@ def update_output(stored_file):
         ])
 
         os.remove(temp_filepath)
-        return overview
+        return overview, stored_file, no_update  # Use no_update here
 
-    return "No file uploaded yet."
+    return "No file uploaded yet.", None, None
