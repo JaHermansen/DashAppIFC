@@ -13,6 +13,7 @@ import io
 from datetime import datetime
 
 
+
 layout = html.Div([
     html.H1("Extract IFC Information"),
     html.Div(id="uploaded-file-info"),
@@ -21,10 +22,81 @@ layout = html.Div([
         type="circle",
         children=html.Div(id='tabs-container', style={'width': '100%', 'overflowX': 'auto'}),
     ),
-    html.Button("Download Excel", id="btn-download"),
+    html.Button(
+        "Download Excel",
+        id="btn-download",
+        style={
+            "background-color": "#f2f2f2",   # Light gray background
+            "color": "#333",                  # Darker text color
+            "padding": "10px 24px",          # Padding
+            "border": "outset",                # No border
+            "cursor": "pointer",             # Cursor style
+            "border-radius": "25px",         # Rounded borders
+            "text-align": "center",          # Center text
+            "text-decoration": "none",       # No underline
+            "display": "inline-block",       # Inline block display
+            "font-size": "13px",             # Font size
+            "transition": "background-color 0.3s",  # Transition effect for background color change
+        },
+    ),
     dcc.Download(id="download-excel"),
-    dcc.Store(id='stored-data')
+    dcc.Store(id='stored-data', data=None)
 ])
+
+@callback(
+    Output("btn-download", "style"),
+    Input("btn-download", "n_clicks"),
+    Input("btn-download", "n_clicks_timestamp"),
+    Input("btn-download", "n_mouseovers"),
+    Input("btn-download", "n_mouseouts"),
+    prevent_initial_call=True
+)
+def update_button_style(n_clicks, n_clicks_timestamp, n_mouseovers, n_mouseouts):
+    if n_clicks is not None and n_clicks_timestamp is not None:
+        # Button clicked
+        return {
+            "background-color": "#cccccc",  # Darker background color
+            "color": "#333",                # Darker text color
+            "padding": "10px 24px",
+            "border": "yes",
+            "cursor": "pointer",
+            "border-radius": "25px",
+            "text-align": "center",
+            "text-decoration": "none",
+            "display": "inline-block",
+            "font-size": "13px",
+            "transition": "background-color 0.9s",
+        }
+    elif n_mouseovers is not None and n_mouseovers > n_mouseouts:
+        # Button hovered
+        return {
+            "background-color": "#e6e6e6",  # Slightly darker background color
+            "color": "#333",                # Darker text color
+            "padding": "10px 24px",
+            "border": "none",
+            "cursor": "pointer",
+            "border-radius": "25px",
+            "text-align": "center",
+            "text-decoration": "none",
+            "display": "inline-block",
+            "font-size": "13px",
+            "transition": "background-color 1s",
+        }
+    else:
+        # Default style
+        return {
+            "background-color": "#f2f2f2",  # Light gray background
+            "color": "#333",                # Darker text color
+            "padding": "10px 24px",
+            "border": "yes",
+            "cursor": "pointer",
+            "border-radius": "25px",
+            "text-align": "center",
+            "text-decoration": "none",
+            "display": "inline-block",
+            "font-size": "13px",
+            "transition": "background-color 0.3s",
+        }
 
 @callback(
     Output('uploaded-file-info', 'children'),
@@ -116,7 +188,8 @@ def get_ifc_pandas(ifc_file):
     return create_pandas_dataframe(data, pset_attributes)
 
 @callback(
-    Output('tabs-container', 'children'),
+    #Output('tabs-container', 'children'),
+    Output('stored-data','data'),
     Input('ifc-data-store', 'data')
 )
 
@@ -141,18 +214,42 @@ def update_tabs(ifc_data):
 
         os.remove(temp_file_path)
 
-        return dash_table.DataTable(
-            data=df.to_dict('records'),
-            columns=[{'name': i, 'id': i} for i in df.columns],
-            style_table={'overflowX': 'auto'},
-            style_cell={'minWidth': '100px', 'width': '100px', 'maxWidth': '300px',
-                        'overflow': 'hidden', 'textOverflow': 'ellipsis'}
-        )
-
+        return  df.to_dict('records')#create_table(df),
     except Exception as e:
         print("Error parsing contents:", e)
 
 
+@callback(
+    Output('tabs-container', 'children'),
+    Input('stored-data', 'data')
+)
+
+def create_tabs(data_table):
+    if data_table is None:
+        raise PreventUpdate
+    
+    try:
+        ifc_data = pd.DataFrame(data_table)
+
+        tabs = []
+        unique_classes = ifc_data['Class'].unique()
+        
+        for class_value in unique_classes:
+            class_data = ifc_data[ifc_data['Class'] == class_value]
+            table = dash_table.DataTable(
+                data=class_data.to_dict('records'),
+                columns=[{'name': i, 'id': i} for i in class_data.columns],
+                style_table={'overflowX': 'auto'},
+                style_cell={'minWidth': '100px', 'width': '100px', 'maxWidth': '300px',
+                            'overflow': 'hidden', 'textOverflow': 'ellipsis'}
+            )
+            tab = dcc.Tab(label=class_value, children=[table])
+            tabs.append(tab)
+        
+        return dcc.Tabs(children=tabs)
+    
+    except Exception as e:
+        print("Error parsing contents:", e)
 
 @callback(
     Output('export-to-excel', 'disabled'),
@@ -164,23 +261,20 @@ def enable_export_button(tabs):
 @callback(
     Output("download-excel", "data"),
     Input("btn-download", "n_clicks"),
-    State("tabs-container", "children"),
+    State('stored-data','data'),
     prevent_initial_call=True
 )
 def download_excel(n_clicks, data_table):
     if data_table:
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            data = data_table.get('props', {}).get('data')
-            columns = [col['name'] for col in data_table.get('props', {}).get('columns', [])]
-            if data is not None and columns:
-                df = pd.DataFrame(data, columns=columns)
-                df.fillna("", inplace=True)  # Replace "N/A" with any value
-                class_values = df['Class'].unique()
-                for class_value in class_values:
-                    class_df = df[df['Class'] == class_value]
-                    class_df.to_excel(writer, index=False, sheet_name=class_value)
-                    
+            df = pd.DataFrame(data_table)
+            df.fillna("", inplace=True)  # Replace "N/A" with any value
+            class_values = df['Class'].unique()
+            for class_value in class_values:
+                class_df = df[df['Class'] == class_value]
+                class_df.to_excel(writer, index=False, sheet_name=class_value)
+                
         output.seek(0)
         today_date = datetime.now().strftime('%Y-%m-%d')
         new_filename = f"Extracted_IFC_Data_{today_date}.xlsx"
