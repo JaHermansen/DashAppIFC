@@ -18,9 +18,12 @@ app = dash.Dash(
     server=server,
     use_pages=True,
     external_stylesheets=[dbc.themes.LUX],
-    meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
+    meta_tags=[
+        {"name": "viewport", "content": "width=device-width, initial-scale=1"},
+        {"rel": "icon", "href": "/assets/favicon.ico", 'type':'image/x-icon'}
+    ],
     suppress_callback_exceptions=True,
-    title='Data Manager'
+    title='Data Manager',
 )
 
 auth = dash_auth.BasicAuth(
