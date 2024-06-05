@@ -1,7 +1,7 @@
 import pandas as pd
 from dash import html, callback, Output, Input, dcc, dash_table, State
 from dash.exceptions import PreventUpdate
-import plotly.express as px
+import plotly.graph_objs as go
 import tempfile
 import os
 import base64
@@ -11,8 +11,6 @@ from openpyxl import Workbook
 from openpyxl.styles import PatternFill
 import io
 from datetime import datetime
-
-
 
 layout = html.Div([
     html.H1("Extract IFC Information"),
@@ -40,8 +38,14 @@ layout = html.Div([
         },
     ),
     dcc.Download(id="download-excel"),
-    dcc.Store(id='stored-data', data=None)
+    dcc.Store(id='stored-data', data=None),
+    dcc.Graph(id='data-distribution-chart')
 ])
+
+def calculate_filled_values_distribution(df):
+    filled_counts = df.apply(lambda x: x.notna().sum())
+    total_counts = len(df)
+    return filled_counts, total_counts
 
 @callback(
     Output("btn-download", "style"),
@@ -188,7 +192,6 @@ def get_ifc_pandas(ifc_file):
     return create_pandas_dataframe(data, pset_attributes)
 
 @callback(
-    #Output('tabs-container', 'children'),
     Output('stored-data','data'),
     Input('ifc-data-store', 'data')
 )
@@ -218,16 +221,14 @@ def update_tabs(ifc_data):
     except Exception as e:
         print("Error parsing contents:", e)
 
-
 @callback(
     Output('tabs-container', 'children'),
     Input('stored-data', 'data')
 )
-
 def create_tabs(data_table):
     if data_table is None:
         raise PreventUpdate
-    
+
     try:
         ifc_data = pd.DataFrame(data_table)
 
@@ -243,10 +244,14 @@ def create_tabs(data_table):
                 style_cell={'minWidth': '100px', 'width': '100px', 'maxWidth': '300px',
                             'overflow': 'hidden', 'textOverflow': 'ellipsis'}
             )
-            tab = dcc.Tab(label=class_value, children=[table])
+            tab = dcc.Tab(
+                label=class_value,
+                children=[table],
+                style={'maxWidth': '100%', 'overflow': 'hidden', 'textOverflow': 'ellipsis', 'whiteSpace': 'nowrap'}
+            )
             tabs.append(tab)
         
-        return dcc.Tabs(children=tabs)
+        return dcc.Tabs(children=tabs, style={'width': '100%', 'overflow': 'hidden'})
     
     except Exception as e:
         print("Error parsing contents:", e)
@@ -280,3 +285,32 @@ def download_excel(n_clicks, data_table):
         new_filename = f"Extracted_IFC_Data_{today_date}.xlsx"
         return dcc.send_bytes(output.getvalue(), new_filename)
     return None
+
+@callback(
+    Output('data-distribution-chart', 'figure'),
+    Input('stored-data', 'data')
+)
+def update_data_distribution_chart(data_table):
+    if data_table is None:
+        raise PreventUpdate
+
+    df = pd.DataFrame(data_table)
+    filled_counts, total_counts = calculate_filled_values_distribution(df)
+
+    fig = go.Figure(data=[
+        go.Bar(
+            x=filled_counts.index,
+            y=filled_counts,
+            text=[f"{val}/{total_counts}" for val in filled_counts],
+            textposition='auto',
+            marker=dict(color='blue')
+        )
+    ])
+    fig.update_layout(
+        title="Distribution of Filled Values in Each Column",
+        xaxis_title="Columns",
+        yaxis_title="Number of Filled Values",
+        margin=dict(l=20, r=20, t=40, b=20),
+        height=400
+    )
+    return fig
