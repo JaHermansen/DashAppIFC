@@ -4,8 +4,8 @@ dash_auth
 flask
 # ifcopenshell
 # tempfile
-os
-pandas
+# os
+# pandas
 dash_table
 plotly
 openpyxl
