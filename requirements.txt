@@ -2,7 +2,6 @@ dash
 dash_bootstrap_components
 dash_auth
 flask
-base64
 ifcopenshell
 tempfile
 os
