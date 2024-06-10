@@ -2,7 +2,7 @@ dash
 dash_bootstrap_components
 dash_auth
 flask
-ifcopenshell
+# ifcopenshell
 tempfile
 os
 pandas
