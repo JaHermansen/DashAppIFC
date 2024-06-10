@@ -3,7 +3,7 @@ dash_bootstrap_components
 dash_auth
 flask
 # ifcopenshell
-tempfile
+# tempfile
 os
 pandas
 dash_table
