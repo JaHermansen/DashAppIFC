@@ -1,11 +1,11 @@
-ifcopenshell==0.7.0.240521
+ifcopenshell
 dash
 dash_bootstrap_components
 dash_auth
 flask
 # tempfile
 # os
-# pandas
+pandas
 dash_table
 plotly
 openpyxl
