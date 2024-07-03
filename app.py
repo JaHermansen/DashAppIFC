@@ -72,6 +72,8 @@ sidebar = html.Div(
                     dbc.NavLink("Home", href="/", active="exact"),
                     dbc.NavLink("Extract IFC information", href="/ExtractNestedProperties", active="exact"),
                     dbc.NavLink("Batch check IFC models", href="/BatchCheck", active="exact"),
+                    dbc.NavLink("Open IFCDM", href="https://ifcdm.vercel.app/", target="_blank", external_link=True),
+
                 ],
                 vertical=True,
                 pills=True,

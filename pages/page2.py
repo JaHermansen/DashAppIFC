@@ -3,7 +3,7 @@ import dash
 dash.register_page(
     __name__,
     path='/BatchCheck',
-    title='Batch Check IFC Models'
+    title='Batch Check IFC Models (WIP)'
 )
 
-layout = html.P("Oh cool, this is page 2!")
+layout = html.P("Work in progress...")
