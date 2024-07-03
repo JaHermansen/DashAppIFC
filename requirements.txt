@@ -1,12 +1,11 @@
+# ifcopenshell
 dash
 dash_bootstrap_components
 dash_auth
 flask
-base64
-ifcopenshell
-tempfile
-os
-pandas
+# tempfile
+# os
+# pandas
 dash_table
 plotly
 openpyxl
