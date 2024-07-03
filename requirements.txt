@@ -1,4 +1,4 @@
-ifcopenshell
+ifcopenshell==0.7.0.240521
 dash
 dash_bootstrap_components
 dash_auth
